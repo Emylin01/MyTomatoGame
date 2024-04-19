@@ -8,6 +8,8 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
@@ -18,8 +20,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.JRadioButton;
-import javax.swing.JToolBar;
 import javax.swing.UIManager;
+
+import tomato.database.DatabaseManager;
 
 public class HomeGUI extends JFrame {
 
@@ -133,11 +136,18 @@ public class HomeGUI extends JFrame {
 		backgroundPanel.add(btnScoreBoard);
 		
 		btnScoreBoard.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				LeaderboardGUI leaderboardGUI = new LeaderboardGUI(); 
-				leaderboardGUI.setVisible(true);
-			}
+		    public void actionPerformed(ActionEvent e) {
+		        try {
+		            Connection connection = DatabaseManager.getConnection(); // Get the database connection
+		            LeaderboardGUI leaderboardGUI = new LeaderboardGUI(connection); // Pass the connection to the constructor
+		            leaderboardGUI.setVisible(true);
+		        } catch (SQLException ex) {
+		            ex.printStackTrace();
+		            // Handle the SQLException here, such as displaying an error message
+		        }
+		    }
 		});
+
 		btnScoreBoard.setIcon(new ImageIcon(img1));
 
 		// Action listener for radio buttons to capture selected difficulty level

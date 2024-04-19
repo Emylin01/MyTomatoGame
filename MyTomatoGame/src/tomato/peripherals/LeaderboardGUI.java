@@ -1,16 +1,25 @@
 package tomato.peripherals;
 
 import javax.swing.*;
+
+import tomato.database.DatabaseManager;
+import tomato.model.Leaderboard;
+
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Map;
 
 public class LeaderboardGUI extends JFrame {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+	private Leaderboard leaderboard;
+	private Connection connection;
 
-	public LeaderboardGUI() {
+    private static final long serialVersionUID = 1L;
+
+	public LeaderboardGUI(Connection connection) {
+		this.connection = connection;
+		this.leaderboard = new Leaderboard(connection);
         initialize();
     }
 
@@ -45,16 +54,46 @@ public class LeaderboardGUI extends JFrame {
     }
 
     private void populateLeaderboard(JTextArea leaderboardTextArea) {
-        // Here you would retrieve the leaderboard data from the Leaderboard class
-        // and populate the JTextArea with the data
-        // For example:
-        leaderboardTextArea.setText("1. Player1 - 100\n2. Player2 - 90\n3. Player3 - 80");
+    	 Map<String, Integer> topPlayersEasy = leaderboard.getTopPlayers(5, "hs_easy");
+         Map<String, Integer> topPlayersMedium = leaderboard.getTopPlayers(5, "hs_medium");
+         Map<String, Integer> topPlayersHard = leaderboard.getTopPlayers(5, "hs_hard");
+  
+         StringBuilder leaderboardText = new StringBuilder();
+         leaderboardText.append("Easy Mode:\n");
+         appendTopPlayersToText(topPlayersEasy, leaderboardText);
+         leaderboardText.append("\nMedium Mode:\n");
+         appendTopPlayersToText(topPlayersMedium, leaderboardText);
+         leaderboardText.append("\nHard Mode:\n");
+         appendTopPlayersToText(topPlayersHard, leaderboardText);
+
+         leaderboardTextArea.setText(leaderboardText.toString());
+    
+    }
+    private void appendTopPlayersToText(Map<String, Integer> topPlayers, StringBuilder text) {
+        int rank = 1;
+        for (Map.Entry<String, Integer> entry : topPlayers.entrySet()) {
+            text.append(rank++).append(". ").append(entry.getKey()).append(" - ").append(entry.getValue()).append("\n");
+        }
     }
 
     public static void main(String[] args) {
+        Connection connection = null;
+        try {
+            connection = DatabaseManager.getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // Handle the SQLException here, such as displaying an error message
+            return; // Exit the method if there's an exception
+        }
+        
+        final Connection finalConnection = connection; // effectively final variable
+
         EventQueue.invokeLater(() -> {
-            LeaderboardGUI leaderboardGUI = new LeaderboardGUI();
+            LeaderboardGUI leaderboardGUI = new LeaderboardGUI(finalConnection);
             leaderboardGUI.setVisible(true);
         });
     }
+    
+
+
 }

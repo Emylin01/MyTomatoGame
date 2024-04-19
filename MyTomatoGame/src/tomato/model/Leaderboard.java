@@ -1,41 +1,36 @@
 package tomato.model;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Leaderboard {
-    private Map<String, Integer> leaderboard; // Map to store player names and scores
+	private Connection connection; 
 
-    public Leaderboard() {
-        leaderboard = new HashMap<>();
+    public Leaderboard(Connection connection) {
+    	this.connection = connection;
     }
 
-    // Method to add a player to the leaderboard with their score
-    public void addPlayer(String playerName, int score) {
-        leaderboard.put(playerName, score);
-    }
 
-    // Method to update a player's score on the leaderboard
-    public void updateScore(String playerName, int newScore) {
-        if (leaderboard.containsKey(playerName)) {
-            leaderboard.put(playerName, newScore);
-        }
-    }
-
-    // Method to retrieve the top N players on the leaderboard
-    public Map<String, Integer> getTopPlayers(int n) {
-        // Implement logic to sort the leaderboard by score and return the top N players
-        // This could involve sorting the map by value and selecting the top N entries
-        // For brevity, I'll provide a basic example
+    // Method to retrieve the top N players for a specific difficulty level
+    public Map<String, Integer> getTopPlayers(int n, String difficulty) {
         Map<String, Integer> topPlayers = new HashMap<>();
-        int count = 0;
-        for (Map.Entry<String, Integer> entry : leaderboard.entrySet()) {
-            topPlayers.put(entry.getKey(), entry.getValue());
-            count++;
-            if (count >= n) {
-                break;
+        String query = "SELECT username, " + difficulty + " FROM userdata ORDER BY " + difficulty + " DESC LIMIT ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, n);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                String username = resultSet.getString("username");
+                int score = resultSet.getInt(difficulty);
+                topPlayers.put(username, score);
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return topPlayers;
     }
+       
 }

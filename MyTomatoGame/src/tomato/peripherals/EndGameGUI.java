@@ -1,3 +1,4 @@
+
 package tomato.peripherals;
 
 import javax.swing.*;
@@ -77,5 +78,5 @@ public class EndGameGUI extends JFrame {
             }
         });
     }
+	
 }
-

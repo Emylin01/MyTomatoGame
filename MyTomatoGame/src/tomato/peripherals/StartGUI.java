@@ -1,3 +1,4 @@
+
 package tomato.peripherals;
 import java.awt.Color;
 import java.awt.Dialog.ModalExclusionType;
@@ -86,4 +87,3 @@ public class StartGUI extends JFrame {
 
     }
 }
-

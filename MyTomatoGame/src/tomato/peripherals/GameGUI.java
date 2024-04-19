@@ -5,6 +5,7 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.sql.SQLException;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -16,6 +17,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.Timer;
 
+import tomato.database.DatabaseManager;
 import tomato.engine.GameEngine;
 
 public class GameGUI extends JFrame implements ActionListener {
@@ -23,9 +25,11 @@ public class GameGUI extends JFrame implements ActionListener {
 	private static final long serialVersionUID = -107785653906635L;
 	private Timer timer;
 	private int timeRemaining = 20; //Initial time in seconds
+	private String username;
+
 	
 	private String difficultyLevel; // Store the selected difficulty level
-
+	private DatabaseManager databaseManager;
 	private JLabel questArea = null;
 	private GameEngine myGame = null;
 	private BufferedImage currentGame = null;
@@ -41,13 +45,13 @@ public class GameGUI extends JFrame implements ActionListener {
 
 
 // * Initializes the game. 
-	private void initGame(String player) {
+	private void initGame(String username) {
 		setSize(813, 671);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle("What is the missing value?");
 		JPanel panel = new JPanel();
 
-		myGame = new GameEngine(player);
+		myGame = new GameEngine(username, difficultyLevel);
 		currentGame = myGame.nextGame();
 		panel.setLayout(null);
 		
@@ -147,11 +151,20 @@ private int getTotalSeconds() {
 	 * 
 	 * @param player
 	 */
-	public GameGUI(String player,String difficulty) {
+	public GameGUI(String username,String difficulty) {
 		super();
+		this.username = username;
 		this.difficultyLevel = difficulty;
-		initGame(player);
+		initGame(username);
 		setTimerDuration(); // Set the timer duration based on the selected difficulty level
+	    try {
+	        // Open the database connection when the GameGUI instance is created
+	        databaseManager = new DatabaseManager();
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        // Handle the SQLException, such as displaying an error message
+	        JOptionPane.showMessageDialog(this, "Error connecting to database: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+	    }
 	}
 	
     // Method to set the timer duration based on the selected difficulty level
@@ -189,9 +202,50 @@ private int getTotalSeconds() {
 		} else { 
 			System.out.println("Not Correct"); 
 			infoArea.setText("Oops. Try again! ");
+			// Check if the timer has expired
+	        if (timeRemaining <= 0) {
+	            // Stop the timer
+	            timer.stop();	   
+				// Call the gameOver method to update the database
+	            String username = "demo"; // Set the username here
+	            gameOver(username);
+	            // Show the end game GUI
+	            EndGameGUI endGameGUI = new EndGameGUI(score);
+	            endGameGUI.setVisible(true);
+	            // Close the current game GUI
+	            dispose();
+	        }
 		}
 	}
 	
+	public void gameOver(String username) {
+	    int score = myGame.getScore(); // Get the player's score
+
+	    try {
+	        // Update the player's score in the database based on the difficulty level
+	        switch (difficultyLevel) {
+	            case "Easy":
+	                databaseManager.updateHighScoreEasy(username, score);
+	                break;
+	            case "Medium":
+	                databaseManager.updateHighScoreMedium(username, score);
+	                break;
+	            case "Hard":
+	                databaseManager.updateHighScoreHard(username, score);
+	                break;
+	            default:
+	                // Handle the case where the difficulty level is unknown
+	                break;
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        // Handle the SQLException, such as displaying an error message
+	    } finally {
+	        // Always close the connection
+	        databaseManager.closeConnection();
+	    }
+	}
+
 
 	/**
 	 * Main entry point into the equation game. Can be used without login for testing. 
